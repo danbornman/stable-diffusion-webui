@@ -1,33 +1,69 @@
-# disable the restart dialogue and install several packages
-sudo sed -i "/#\$nrconf{restart} = 'i';/s/.*/\$nrconf{restart} = 'a';/" /etc/needrestart/needrestart.conf
-sudo apt-get update
-sudo apt install wget git python3 python3-venv build-essential net-tools awscli -y
+#!/bin/bash
+set -ex
+exec >> /var/log/user-data.log 2>&1
+export GIT_TERMINAL_PROMPT=0
+export HOME=/home/ec2-user
 
-install CUDA (from https://developer.nvidia.com/cuda-downloads)
-wget https://developer.download.nvidia.com/compute/cuda/12.0.0/local_installers/cuda_12.0.0_525.60.13_linux.run
-sudo sh cuda_12.0.0_525.60.13_linux.run --silent
+echo "################################################################"
+echo "Starting setup.sh"
+echo "################################################################"
 
-# install git-lfs
-curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
-sudo apt-get install git-lfs
-sudo -u ubuntu git lfs install --skip-smudge	
+# Install required packages
+# Amazon Linux uses dnf, not apt-get
+dnf update -y
+dnf install -y wget git python3 python3-pip net-tools unzip kernel-devel-$(uname -r) kernel-headers-$(uname -r)
 
-# download the SD model v2.1 and move it to the SD model directory
-sudo -u ec2-user git clone --depth 1 https://huggingface.co/Manojb/stable-diffusion-2-1-base
-cd stable-diffusion-2-1-base/
-sudo -u ec2-user git lfs pull --include "v2-1_512-ema-pruned.ckpt"
-sudo -u ec2-user git lfs install --force
-cd ..
-mv stable-diffusion-2-1-base/v2-1_512-ema-pruned.ckpt stable-diffusion-webui/models/Stable-diffusion/
+# Install CUDA driver and toolkit via package manager
+# Using dnf is more reliable than the .run installer as it handles
+# kernel and gcc version compatibility automatically
+dnf config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/amzn2023/x86_64/cuda-amzn2023.repo
+
+# Remove any stale rhel8 repo that may have been added previously
+rm -f /etc/yum.repos.d/cuda-rhel8*.repo
+
+dnf clean all
+dnf install -y nvidia-driver nvidia-driver-cuda
+
+# Install git-lfs
+# Amazon Linux uses the rpm script, not the deb script
+curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.rpm.sh | bash
+dnf install -y git-lfs
+sudo -u ec2-user HOME=/home/ec2-user git lfs install --skip-smudge
+
+echo "################################################################"
+echo "Downloading SD v2.1 model"
+echo "################################################################"
+
+# Download the SD v2.1 model from HuggingFace and move it to the models directory
+cd /data
+sudo -u ec2-user HOME=/home/ec2-user git clone --depth 1 https://huggingface.co/Manojb/stable-diffusion-2-1-base
+cd /data/stable-diffusion-2-1-base
+sudo -u ec2-user HOME=/home/ec2-user git lfs pull --include "v2-1_512-ema-pruned.ckpt"
+cd /data
+mv stable-diffusion-2-1-base/v2-1_512-ema-pruned.ckpt /data/stable-diffusion-webui/models/Stable-diffusion/
 rm -rf stable-diffusion-2-1-base/
 
-# download the corresponding config file and move it also to the model directory (make sure the name matches the model name)
-# wget https://raw.githubusercontent.com/danbornman/stablediffusion/main/configs/stable-diffusion/v2-inference-v.yaml
-# cp v2-inference.yaml stable-diffusion-webui/models/Stable-diffusion/v2-1_512-ema-pruned.yaml
+# Download the matching config file for the SD v2.1 model
+# The config filename must match the model filename exactly
+wget https://raw.githubusercontent.com/danbornman/stablediffusion/main/configs/stable-diffusion/v2-inference-v.yaml \
+  -O /data/stable-diffusion-webui/models/Stable-diffusion/v2-1_512-ema-pruned.yaml
 
-# change ownership of the web UI so that a regular user can start the server
-sudo chown -R ec2-user:ec2-user stable-diffusion-webui/
+# Give ec2-user ownership of everything in /data
+chown -R ec2-user:ec2-user /data
 
-# start the server as user 'ubuntu'
-sudo -u ec2-user nohup bash stable-diffusion-webui/webui.sh --listen > log.txt
+echo "################################################################"
+echo "Configuring and starting Web UI"
+echo "################################################################"
 
+# Enable --listen in webui-user.sh so the UI is accessible from outside the instance
+sed -i 's/#export COMMANDLINE_ARGS=""/export COMMANDLINE_ARGS="--listen"/' \
+  /data/stable-diffusion-webui/webui-user.sh
+
+# Start the web UI as ec2-user in the background
+# Logs go to /data/log.txt - tail this file to monitor startup progress
+sudo -u ec2-user HOME=/home/ec2-user \
+  nohup bash /data/stable-diffusion-webui/webui.sh > /data/log.txt 2>&1 &
+
+echo "################################################################"
+echo "Setup complete. Monitor progress with: tail -f /data/log.txt"
+echo "################################################################"

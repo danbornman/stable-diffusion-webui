@@ -16,6 +16,7 @@ Resources:
           FromPort: 7860
           ToPort: 7860
           CidrIp: 0.0.0.0/0
+
   EC2Instance:
     Type: AWS::EC2::Instance
     Properties:
@@ -24,12 +25,15 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
-            VolumeSize: 30        # enough for OS and drivers
+            VolumeSize: 30        # root volume - OS, drivers, packages
             VolumeType: gp3
-        - DeviceName: /dev/sdb    # separate 300GB data volume
+        - DeviceName: /dev/sdb
           Ebs:
-            VolumeSize: 300
+            VolumeSize: 300       # data volume - SD models, venv, output images
             VolumeType: gp3
+      Tags:
+        - Key: Name
+          Value: sd-web-ui-cf
       SecurityGroups:
         - Ref: SecurityGroup
       UserData:
@@ -38,25 +42,49 @@ Resources:
           set -ex
           exec > /var/log/user-data.log 2>&1
           export GIT_TERMINAL_PROMPT=0
+          export HOME=/home/ec2-user
 
-          # Format and mount the data volume
-          mkfs -t xfs /dev/nvme1n1
+          # Wait for all volumes to be attached and visible
+          sleep 10
+
+          # On Nitro instances (g4dn), /dev/sdb does not map predictably to an nvme
+          # device name. Find the 300GB data volume by selecting the largest disk
+          # that has no filesystem (i.e. unformatted).
+          DATA_DISK=$(lsblk -dpno NAME,SIZE,FSTYPE \
+            | grep -v "loop" \
+            | awk '$3=="" {print $2, $1}' \
+            | sort -rh \
+            | awk 'NR==1 {print $2}')
+
+          echo "Detected data disk: $DATA_DISK"
+
+          # Verify we found a disk before proceeding
+          if [ -z "$DATA_DISK" ]; then
+            echo "ERROR: Could not detect data disk. Exiting."
+            exit 1
+          fi
+
+          # Format with XFS and mount to /data
+          mkfs -t xfs $DATA_DISK
           mkdir -p /data
-          mount /dev/nvme1n1 /data
+          mount $DATA_DISK /data
 
-          # Make mount permanent
-          UUID=$(blkid -s UUID -o value /dev/nvme1n1)
+          # Make mount permanent across reboots using UUID
+          # (device names like nvme2n1 can change, UUID never does)
+          UUID=$(blkid -s UUID -o value $DATA_DISK)
           echo "UUID=$UUID /data xfs defaults,nofail 0 2" >> /etc/fstab
 
-          # Set ownership
+          # Give ec2-user full ownership of /data
           chown -R ec2-user:ec2-user /data
 
-          # Rest of your setup...
+          # Clone the web UI repo to /data and run setup
           cd /data
-          git clone https://github.com/danbornman/stable-diffusion-webui.git
+          sudo -u ec2-user git clone https://github.com/danbornman/stable-diffusion-webui.git
           bash /data/stable-diffusion-webui/setup.sh
+
   MyEIP:
     Type: AWS::EC2::EIP
+
   MyEIPAssociation:
     Type: AWS::EC2::EIPAssociation
     Properties:
