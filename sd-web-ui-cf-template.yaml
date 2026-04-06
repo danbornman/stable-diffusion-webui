@@ -24,19 +24,37 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
+            VolumeSize: 30        # enough for OS and drivers
+            VolumeType: gp3
+        - DeviceName: /dev/sdb    # separate 300GB data volume
+          Ebs:
             VolumeSize: 300
-            VolumeType: gp2
-      "Tags" : [
-            {"Key" : "Name", "Value" : "sd-web-ui-cf"},
-        ]
+            VolumeType: gp3
       SecurityGroups:
         - Ref: SecurityGroup
       UserData:
         'Fn::Base64': |
-            #!/bin/bash
-            cd /home/ubuntu
-            git clone https://github.com/danbornman/stable-diffusion-webui.git
-            bash stable-diffusion-webui/setup.sh -y
+          #!/bin/bash
+          set -ex
+          exec > /var/log/user-data.log 2>&1
+          export GIT_TERMINAL_PROMPT=0
+
+          # Format and mount the data volume
+          mkfs -t xfs /dev/nvme1n1
+          mkdir -p /data
+          mount /dev/nvme1n1 /data
+
+          # Make mount permanent
+          UUID=$(blkid -s UUID -o value /dev/nvme1n1)
+          echo "UUID=$UUID /data xfs defaults,nofail 0 2" >> /etc/fstab
+
+          # Set ownership
+          chown -R ec2-user:ec2-user /data
+
+          # Rest of your setup...
+          cd /data
+          git clone https://github.com/danbornman/stable-diffusion-webui.git
+          bash /data/stable-diffusion-webui/setup.sh
   MyEIP:
     Type: AWS::EC2::EIP
   MyEIPAssociation:
