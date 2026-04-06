@@ -13,7 +13,7 @@ sudo apt-get install git-lfs
 sudo -u ubuntu git lfs install --skip-smudge
 
 # download the SD model v2.1 and move it to the SD model directory
-sudo -u ubuntu git clone --depth 1 https://huggingface.co/stabilityai/stable-diffusion-2-1-base
+sudo -u ubuntu git clone --depth 1 https://huggingface.co/Manojb/stable-diffusion-2-1-base
 cd stable-diffusion-2-1-base/
 sudo -u ubuntu git lfs pull --include "v2-1_512-ema-pruned.ckpt"
 sudo -u ubuntu git lfs install --force
@@ -22,7 +22,7 @@ mv stable-diffusion-2-1-base/v2-1_512-ema-pruned.ckpt stable-diffusion-webui/mod
 rm -rf stable-diffusion-2-1-base/
 
 # download the corresponding config file and move it also to the model directory (make sure the name matches the model name)
-wget https://raw.githubusercontent.com/Stability-AI/stablediffusion/main/configs/stable-diffusion/v2-inference.yaml
+wget https://raw.githubusercontent.com/danbornman/stablediffusion/blob/main/configs/stable-diffusion/v2-inference-v.yaml
 cp v2-inference.yaml stable-diffusion-webui/models/Stable-diffusion/v2-1_512-ema-pruned.yaml
 
 # change ownership of the web UI so that a regular user can start the server
