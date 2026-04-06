@@ -20,7 +20,7 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: g4dn.xlarge
-      ImageId: ami-04e1e05c5905d877e
+      ImageId: ami-02f986bab3de34d0d
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
