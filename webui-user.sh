@@ -4,12 +4,12 @@
 #########################################################
 
 # Install directory without trailing slash
-install_dir="/data"
+install_dir="/home/ec2-user"
 
 # Name of the subdirectory
 #clone_dir="stable-diffusion-webui"
 
-# Commandline arguments for webui.py, for example: export COMMANDLINE_ARGS="--medvram --opt-split-attention"
+# Commandline arguments for webui.py
 export COMMANDLINE_ARGS="--listen"
 
 # python3 executable

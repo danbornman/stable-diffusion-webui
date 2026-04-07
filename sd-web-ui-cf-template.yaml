@@ -25,11 +25,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
-            VolumeSize: 30        # root volume - OS, drivers, packages
-            VolumeType: gp3
-        - DeviceName: /dev/sdb
-          Ebs:
-            VolumeSize: 300       # data volume - SD models, venv, output images
+            VolumeSize: 100
             VolumeType: gp3
       Tags:
         - Key: Name
@@ -44,43 +40,13 @@ Resources:
           export GIT_TERMINAL_PROMPT=0
           export HOME=/home/ec2-user
 
-          # Wait for all volumes to be attached and visible
-          sleep 10
+          # Install git then clone the repo
+          dnf install -y git
+          cd /home/ec2-user
+          sudo -u ec2-user git clone https://github.com/danbornman/stable-diffusion-webui.git
 
-          # On Nitro instances (g4dn), /dev/sdb does not map predictably to an nvme
-          # device name. Find the 300GB data volume by selecting the largest disk
-          # that has no filesystem (i.e. unformatted).
-          DATA_DISK=$(lsblk -dpno NAME,SIZE,FSTYPE \
-            | grep -v "loop" \
-            | awk '$3=="" {print $2, $1}' \
-            | sort -rh \
-            | awk 'NR==1 {print $2}')
-
-          echo "Detected data disk: $DATA_DISK"
-
-          # Verify we found a disk before proceeding
-          if [ -z "$DATA_DISK" ]; then
-            echo "ERROR: Could not detect data disk. Exiting."
-            exit 1
-          fi
-
-          # Format with XFS and mount to /data
-          mkfs -t xfs $DATA_DISK
-          mkdir -p /data
-          mount $DATA_DISK /data
-
-          # Make mount permanent across reboots using UUID
-          # (device names like nvme2n1 can change, UUID never does)
-          UUID=$(blkid -s UUID -o value $DATA_DISK)
-          echo "UUID=$UUID /data xfs defaults,nofail 0 2" >> /etc/fstab
-
-          # Give ec2-user full ownership of /data
-          chown -R ec2-user:ec2-user /data
-
-          # Clone the web UI repo to /data and run setup
-          sudo dnf install -y git
-          cd /data && sudo -u ec2-user git clone https://github.com/danbornman/stable-diffusion-webui.git
-          bash /data/stable-diffusion-webui/setup.sh
+          # Run setup
+          bash /home/ec2-user/stable-diffusion-webui/setup.sh
 
   MyEIP:
     Type: AWS::EC2::EIP
