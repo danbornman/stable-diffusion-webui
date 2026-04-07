@@ -59,6 +59,9 @@ echo "################################################################"
 # sed -i 's/#export COMMANDLINE_ARGS=""/export COMMANDLINE_ARGS="--listen"/' \
 #   /data/stable-diffusion-webui/webui-user.sh
 
+# Clean up the bad venv first
+rm -rf /home/ec2-user/stable-diffusion-webui
+
 # Start the web UI as ec2-user in the background
 # Logs go to /data/log.txt - tail this file to monitor startup progress
 cd /data
