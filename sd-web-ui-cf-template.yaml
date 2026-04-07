@@ -78,8 +78,8 @@ Resources:
           chown -R ec2-user:ec2-user /data
 
           # Clone the web UI repo to /data and run setup
-          cd /data
-          sudo -u ec2-user git clone https://github.com/danbornman/stable-diffusion-webui.git
+          sudo dnf install -y git
+          cd /data && sudo -u ec2-user git clone https://github.com/danbornman/stable-diffusion-webui.git
           bash /data/stable-diffusion-webui/setup.sh
 
   MyEIP:
