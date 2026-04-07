@@ -4,11 +4,9 @@ exec >> /var/log/user-data.log 2>&1
 export GIT_TERMINAL_PROMPT=0
 export HOME=/home/ec2-user
 
-echo "################################################################"
-echo "Starting setup.sh"
-echo "################################################################"
+echo "### Starting setup.sh ###"
 
-# Install required packages
+# Install packages
 dnf update -y
 dnf install -y wget git python3 python3-pip net-tools unzip \
   kernel-devel-$(uname -r) kernel-headers-$(uname -r)
@@ -24,9 +22,7 @@ curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.rpm.s
 dnf install -y git-lfs
 sudo -u ec2-user HOME=/home/ec2-user git lfs install --skip-smudge
 
-echo "################################################################"
-echo "Downloading SD v2.1 model"
-echo "################################################################"
+echo "### Downloading SD v2.1 model ###"
 
 cd /home/ec2-user
 sudo -u ec2-user HOME=/home/ec2-user git clone --depth 1 \
@@ -44,15 +40,11 @@ wget https://raw.githubusercontent.com/danbornman/stablediffusion/main/configs/s
 
 chown -R ec2-user:ec2-user /home/ec2-user
 
-echo "################################################################"
-echo "Launching Web UI"
-echo "################################################################"
+echo "### Launching Web UI ###"
 
 cd /home/ec2-user
 sudo -u ec2-user HOME=/home/ec2-user \
   nohup bash /home/ec2-user/stable-diffusion-webui/webui.sh \
   > /home/ec2-user/log.txt 2>&1 &
 
-echo "################################################################"
-echo "Setup complete. Monitor progress with: tail -f /home/ec2-user/log.txt"
-echo "################################################################"
+echo "### Setup complete. Monitor with: tail -f ~/log.txt ###"

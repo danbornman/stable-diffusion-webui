@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: A CloudFormation template to deploy the Stable Diffusion Web UI by Automatic1111
+Description: Deploy Stable Diffusion Web UI by Automatic1111
 
 Resources:
   SecurityGroup:
@@ -40,12 +40,9 @@ Resources:
           export GIT_TERMINAL_PROMPT=0
           export HOME=/home/ec2-user
 
-          # Install git then clone the repo
           dnf install -y git
           cd /home/ec2-user
           sudo -u ec2-user git clone https://github.com/danbornman/stable-diffusion-webui.git
-
-          # Run setup
           bash /home/ec2-user/stable-diffusion-webui/setup.sh
 
   MyEIP:
