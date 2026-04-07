@@ -56,11 +56,12 @@ echo "Configuring and starting Web UI"
 echo "################################################################"
 
 # Enable --listen in webui-user.sh so the UI is accessible from outside the instance
-sed -i 's/#export COMMANDLINE_ARGS=""/export COMMANDLINE_ARGS="--listen"/' \
-  /data/stable-diffusion-webui/webui-user.sh
+# sed -i 's/#export COMMANDLINE_ARGS=""/export COMMANDLINE_ARGS="--listen"/' \
+#   /data/stable-diffusion-webui/webui-user.sh
 
 # Start the web UI as ec2-user in the background
 # Logs go to /data/log.txt - tail this file to monitor startup progress
+cd /data
 sudo -u ec2-user HOME=/home/ec2-user \
   nohup bash /data/stable-diffusion-webui/webui.sh > /data/log.txt 2>&1 &
 
