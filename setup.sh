@@ -8,8 +8,7 @@ echo "### Starting setup.sh ###"
 
 # Install packages
 dnf update -y
-dnf install -y wget git python3 python3-pip net-tools unzip \
-  kernel-devel-$(uname -r) kernel-headers-$(uname -r)
+dnf install -y wget git python3 python3-pip net-tools unzip
 
 # Install CUDA driver
 dnf config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/amzn2023/x86_64/cuda-amzn2023.repo
