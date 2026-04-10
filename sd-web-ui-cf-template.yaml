@@ -5,7 +5,7 @@ Resources:
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: sd-webui-sg
+      GroupName: sdxl-webui-sg
       GroupDescription: Security group for SD WebUI EC2 instance
       SecurityGroupIngress:
         - IpProtocol: tcp
