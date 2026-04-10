@@ -20,7 +20,7 @@ Resources:
   EC2Instance:
     Type: AWS::EC2::Instance
     Properties:
-      InstanceType: g4dn.xlarge
+      InstanceType: g5.2xlarge
       ImageId: ami-0f2afc310ea592067
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
@@ -40,9 +40,12 @@ Resources:
           export GIT_TERMINAL_PROMPT=0
           export HOME=/home/ec2-user
 
+          # Install git then clone the webui repo
           dnf install -y git
           cd /home/ec2-user
-          sudo -u ec2-user git clone https://github.com/danbornman/stable-diffusion-webui.git
+          sudo -u ec2-user git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git
+
+          # Run setup
           bash /home/ec2-user/stable-diffusion-webui/setup.sh
 
   MyEIP:
