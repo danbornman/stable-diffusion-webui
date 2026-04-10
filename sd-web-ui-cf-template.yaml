@@ -1,11 +1,16 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Deploy Stable Diffusion Web UI by Automatic1111
 
+Parameters:
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 key pair for SSH access
+
 Resources:
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: sdxl-webui-sg
+      GroupName: sd-webui-sg
       GroupDescription: Security group for SD WebUI EC2 instance
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -21,6 +26,7 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: g5.2xlarge
+      KeyName: !Ref KeyName
       ImageId: ami-0f2afc310ea592067
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
@@ -40,10 +46,22 @@ Resources:
           export GIT_TERMINAL_PROMPT=0
           export HOME=/home/ec2-user
 
-          # Install git then clone the webui repo
-          dnf install -y git
+          # Install git and wget
+          dnf install -y git wget
+
+          # Clone AUTOMATIC1111 webui repo
           cd /home/ec2-user
           sudo -u ec2-user git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git
+
+          # Download setup.sh and webui-user.sh from your fork
+          wget https://raw.githubusercontent.com/danbornman/stable-diffusion-webui/master/setup.sh \
+            -O /home/ec2-user/stable-diffusion-webui/setup.sh
+          wget https://raw.githubusercontent.com/danbornman/stable-diffusion-webui/master/webui-user.sh \
+            -O /home/ec2-user/stable-diffusion-webui/webui-user.sh
+
+          chmod +x /home/ec2-user/stable-diffusion-webui/setup.sh
+          chown ec2-user:ec2-user /home/ec2-user/stable-diffusion-webui/setup.sh
+          chown ec2-user:ec2-user /home/ec2-user/stable-diffusion-webui/webui-user.sh
 
           # Run setup
           bash /home/ec2-user/stable-diffusion-webui/setup.sh
