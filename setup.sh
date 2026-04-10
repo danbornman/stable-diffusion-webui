@@ -42,6 +42,19 @@ echo "### Models downloaded ###"
 
 chown -R ec2-user:ec2-user /home/ec2-user
 
+# Fix stablediffusion repo URL to use fork since Stability-AI repo no longer exists
+sed -i 's|https://github.com/Stability-AI/stablediffusion.git|https://github.com/danbornman/stablediffusion.git|' \
+  /home/ec2-user/stable-diffusion-webui/modules/launch_utils.py
+
+# Clear commit hash since fork may have different commits
+sed -i 's|stable_diffusion_commit_hash = os.environ.get.*STABLE_DIFFUSION_COMMIT_HASH.*|stable_diffusion_commit_hash = os.environ.get("STABLE_DIFFUSION_COMMIT_HASH", "")|' \
+  /home/ec2-user/stable-diffusion-webui/modules/launch_utils.py
+
+# Downgrade setuptools before venv build so CLIP installs correctly
+source /home/ec2-user/stable-diffusion-webui/venv/bin/activate 2>/dev/null || true
+pip install setuptools==59.8.0 2>/dev/null || true
+deactivate 2>/dev/null || true
+
 # First run to build venv and install all packages then exit
 echo "### Building venv ###"
 cd /home/ec2-user/stable-diffusion-webui
